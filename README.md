@@ -1,2 +1,1 @@
-# Twitch-API-Interface
- 
+# Twitch API Interface
