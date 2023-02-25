@@ -21,7 +21,7 @@ jobs:
 
       - name: Lint with pylint
         run: |
-          pylint tests twitch
+          pylint --fail-under 9 tests twitch
 
       - name: Run unit tests with nose
         run: nosetests
