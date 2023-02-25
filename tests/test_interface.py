@@ -15,7 +15,7 @@ HELIX_DATA = {}
 def setUpModule():
     """Load Helix responses needed for tests"""
     global HELIX_DATA
-    with open('tests/fixtures/helix_token_response.json', encoding='utf-8') as json_data:
+    with open('tests/fixtures/helix_responses.json', encoding='utf-8') as json_data:
         HELIX_DATA = json.load(json_data)
 
 class TestAuthorization(TestCase):
