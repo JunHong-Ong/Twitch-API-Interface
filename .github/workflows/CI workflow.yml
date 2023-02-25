@@ -21,7 +21,7 @@ jobs:
 
       - name: Lint with pylint
         run: |
-          pylint $(git ls-files '*.py')
+          pylint $(git ls-files *.py)
 
       - name: Run unit tests with nose
         run: nosetests
