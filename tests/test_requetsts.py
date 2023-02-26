@@ -1,11 +1,7 @@
 import json
-import random
 from unittest import TestCase
-from unittest.mock import patch, Mock
-from requests import Response
 
 from twitch.helix import Helix
-from twitch.interface import HelixInterface, Token
 
 HELIX_DATA = {}
 
@@ -29,13 +25,13 @@ class TestGetVideoById(TestCase):
     def test_one_id(self):
         """Test requesting with one video id"""
 
-        self.assertRaises(ValueError, self.helix.get_videos, "notaninteger")
-        self.assertRaises(TypeError, self.helix.get_videos, True)
-        self.assertRaises(TypeError, self.helix.get_videos, 123456.0)
+        self.assertRaises(ValueError, next, self.helix.get_videos("notaninteger"))
+        self.assertRaises(TypeError, next, self.helix.get_videos(True))
+        self.assertRaises(TypeError, next, self.helix.get_videos(123456.0))
 
     def test_multi_id(self):
         """Test requesting with multiple video ids"""
 
-        self.assertRaises(ValueError, self.helix.get_videos, "notaninteger", 123456)
-        self.assertRaises(TypeError, self.helix.get_videos, True, 123456)
-        self.assertRaises(TypeError, self.helix.get_videos, 123456.0, 123456)
+        self.assertRaises(ValueError, next, self.helix.get_videos("notaninteger", 123456))
+        self.assertRaises(TypeError, next, self.helix.get_videos(True, 123456))
+        self.assertRaises(TypeError, next, self.helix.get_videos(123456.0, 123456))
