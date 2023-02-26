@@ -1,16 +1,15 @@
-"""This module allow users to send various HTTP requests to the Twitch Helix API.
-It implements the HelixInterface and Token classes
-"""
+"""TODO: INSERT MODULE DOCSTRING"""
 
 from typing import Union
 
 import logging
 import requests
+from requests import Response
 
 logger = logging.getLogger(__name__)
 
 class Token():
-    """The Token class stores data received from the OAuth Client Credentials Flow"""
+    """TODO: INSERT CLASS DOCSTRING"""
 
     def __init__(self, data: dict[str, Union[str, int]]) -> None:
         self._data = data
@@ -19,19 +18,21 @@ class Token():
         return f'Bearer {self._data.get("access_token")}'
 
     @property
-    def value(self):
+    def id(self):
         """Returns the access token value"""
         return self._data.get("access_token")
 
 class HelixInterface():
-    """ The HelixInterface class allow users to send and receive HTTP requests
-        and responses from the Twitch Helix API. 
-    """
+    """TODO: INSERT CLASS DOCSTRING"""
+
+    BASE_URL = "https://api.twitch.tv/helix/"
 
     def __init__(self, client_id: str, client_secret: str) -> None:
-        self.token = self.get_app_access_token(client_id, client_secret)
+        self.client_id = client_id
+        self.token = self._get_app_access_token(client_id, client_secret)
+        self.headers = {"Authorization": str(self.token), "Client-Id": client_id}
 
-    def get_app_access_token(self, client_id: str, client_secret: str) -> Token:
+    def _get_app_access_token(self, client_id: str, client_secret: str) -> Token:
         """ Requests an app access token from the oauth endpoint. """
 
         params = {
@@ -47,3 +48,19 @@ class HelixInterface():
             return Token(response.json())
 
         raise ValueError(response.json().get("message"))
+
+    def send(self, method, url, headers=None, params=None, json=None) -> Response:
+        """TODO: INSERT DOCSTRING"""
+        return requests.request(method, url, headers=headers, params=params, json=json, timeout=5)
+
+    def get(self, endpoint, headers=None, params=None, json=None):
+        """TODO: INSERT DOCSTRING"""
+        url = self.BASE_URL + endpoint
+
+        return self.send("GET", url, headers, params, json)
+
+    def post(self, endpoint, headers=None, params=None, json=None):
+        """TODO: INSERT DOCSTRING"""
+        url = self.BASE_URL + endpoint
+
+        return self.send("POST", url, headers, params, json)

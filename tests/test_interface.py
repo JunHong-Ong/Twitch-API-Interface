@@ -15,7 +15,7 @@ HELIX_DATA = {}
 def setUpModule():
     """Load Helix responses needed for tests"""
     global HELIX_DATA
-    with open('tests/fixtures/helix_token_response.json', encoding='utf-8') as json_data:
+    with open('tests/fixtures/helix_responses.json', encoding='utf-8') as json_data:
         HELIX_DATA = json.load(json_data)
 
 class TestAuthorization(TestCase):
@@ -36,7 +36,7 @@ class TestAuthorization(TestCase):
         interface = HelixInterface("test_id", "test_secret")
         self.assertIsNotNone(interface.token)
         self.assertIsInstance(interface.token, Token)
-        self.assertEqual(interface.token.value, "jostpf5q0uzmxmkba9iyug38kjtgh")
+        self.assertEqual(interface.token.id, "jostpf5q0uzmxmkba9iyug38kjtgh")
         self.assertEqual(str(interface.token), "Bearer jostpf5q0uzmxmkba9iyug38kjtgh")
 
     @patch('requests.request')
