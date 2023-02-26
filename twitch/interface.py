@@ -1,8 +1,6 @@
-"""This module allow users to send various HTTP requests to the Twitch Helix API.
-It implements the HelixInterface and Token classes
-"""
+"""TODO: INSERT MODULE DOCSTRING"""
 
-from typing import Union, Any
+from typing import Union
 
 import logging
 import requests
@@ -11,15 +9,7 @@ from requests import Response
 logger = logging.getLogger(__name__)
 
 class Token():
-    """A class used to represent an authorization token for Helix.
-
-    ...
-
-    Attributes
-    ----------
-    id : str
-        the id of the token
-    """
+    """TODO: INSERT CLASS DOCSTRING"""
 
     def __init__(self, data: dict[str, Union[str, int]]) -> None:
         self._data = data
@@ -33,9 +23,7 @@ class Token():
         return self._data.get("access_token")
 
 class HelixInterface():
-    """ The HelixInterface class allow users to send and receive HTTP requests
-        and responses from the Twitch Helix API. 
-    """
+    """TODO: INSERT CLASS DOCSTRING"""
 
     BASE_URL = "https://api.twitch.tv/helix/"
 
@@ -62,14 +50,17 @@ class HelixInterface():
         raise ValueError(response.json().get("message"))
 
     def send(self, method, url, headers=None, params=None, json=None) -> Response:
-        return requests.request(method, url, headers=headers, params=params, json=json)
+        """TODO: INSERT DOCSTRING"""
+        return requests.request(method, url, headers=headers, params=params, json=json, timeout=5)
 
     def get(self, endpoint, headers=None, params=None, json=None):
+        """TODO: INSERT DOCSTRING"""
         url = self.BASE_URL + endpoint
 
         return self.send("GET", url, headers, params, json)
 
     def post(self, endpoint, headers=None, params=None, json=None):
+        """TODO: INSERT DOCSTRING"""
         url = self.BASE_URL + endpoint
 
         return self.send("POST", url, headers, params, json)
