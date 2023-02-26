@@ -39,11 +39,3 @@ class TestGetVideoById(TestCase):
         self.assertRaises(ValueError, self.helix.get_videos, "notaninteger", 123456)
         self.assertRaises(TypeError, self.helix.get_videos, True, 123456)
         self.assertRaises(TypeError, self.helix.get_videos, 123456.0, 123456)
-    
-    # def test_over_hundred_id(self):
-    #     """Test requesting with over a hundred video ids"""
-        
-    #     num_ids = 101
-    #     ids = list(range(num_ids))
-    #     num_calls, _ = self.helix.get_videos(*ids)
-    #     self.assertEqual(num_calls, num_ids//100 + 1)

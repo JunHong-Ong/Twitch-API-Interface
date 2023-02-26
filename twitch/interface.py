@@ -11,7 +11,15 @@ from requests import Response
 logger = logging.getLogger(__name__)
 
 class Token():
-    """The Token class stores data received from the OAuth Client Credentials Flow"""
+    """A class used to represent an authorization token for Helix.
+
+    ...
+
+    Attributes
+    ----------
+    id : str
+        the id of the token
+    """
 
     def __init__(self, data: dict[str, Union[str, int]]) -> None:
         self._data = data
@@ -20,7 +28,7 @@ class Token():
         return f'Bearer {self._data.get("access_token")}'
 
     @property
-    def value(self):
+    def id(self):
         """Returns the access token value"""
         return self._data.get("access_token")
 
@@ -28,6 +36,8 @@ class HelixInterface():
     """ The HelixInterface class allow users to send and receive HTTP requests
         and responses from the Twitch Helix API. 
     """
+
+    BASE_URL = "https://api.twitch.tv/helix/"
 
     def __init__(self, client_id: str, client_secret: str) -> None:
         self.client_id = client_id
@@ -53,3 +63,13 @@ class HelixInterface():
 
     def send(self, method, url, headers=None, params=None, json=None) -> Response:
         return requests.request(method, url, headers=headers, params=params, json=json)
+
+    def get(self, endpoint, headers=None, params=None, json=None):
+        url = self.BASE_URL + endpoint
+
+        return self.send("GET", url, headers, params, json)
+
+    def post(self, endpoint, headers=None, params=None, json=None):
+        url = self.BASE_URL + endpoint
+
+        return self.send("POST", url, headers, params, json)
