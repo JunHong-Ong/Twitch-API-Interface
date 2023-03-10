@@ -1,10 +1,9 @@
 """TODO: INSERT MODULE DOCSTRING"""
 
-from typing import Union
+from typing import Union, Any
 
 import logging
 import requests
-from requests import Response
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +48,13 @@ class HelixInterface():
 
         raise ValueError(response.json().get("message"))
 
-    def send(self, method, url, headers=None, params=None, json=None) -> Response:
+    def send(self, method, url, headers=None, params=None, json=None) -> dict[str, Any]:
         """TODO: INSERT DOCSTRING"""
-        return requests.request(method, url, headers=headers, params=params, json=json, timeout=5)
+
+        response = requests.request(method, url, headers=headers,
+                                    params=params, json=json, timeout=5)
+
+        return response.json()
 
     def get(self, endpoint, headers=None, params=None, json=None):
         """TODO: INSERT DOCSTRING"""
