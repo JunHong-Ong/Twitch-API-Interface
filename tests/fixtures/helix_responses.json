@@ -48,5 +48,25 @@
             ],
             "pagination": {}
         }
+    },
+    "CLIP": {
+        "GOOD_REQUEST": {
+            "id": "SmoothGlamorousJuiceKeepo-iVTzGP3hCRXc-1Gw",
+            "url": "https://clips.twitch.tv/SmoothGlamorousJuiceKeepo-iVTzGP3hCRXc-1Gw",
+            "embed_url": "https://clips.twitch.tv/embed?clip=SmoothGlamorousJuiceKeepo-iVTzGP3hCRXc-1Gw",
+            "broadcaster_id": "71092938",
+            "broadcaster_name": "xQc",
+            "creator_id": "884239641",
+            "creator_name": "peepoing",
+            "video_id": "1754839789",
+            "game_id": "509658",
+            "language": "en",
+            "title": "LUL",
+            "view_count": 220456,
+            "created_at": "2023-03-04T06:37:38Z",
+            "thumbnail_url": "https://clips-media-assets2.twitch.tv/1mOnH4lU8xj94QkV3PtRsA/AT-cm%7C1mOnH4lU8xj94QkV3PtRsA-preview-480x272.jpg",
+            "duration": 24.6,
+            "vod_offset": 25724
+        }
     }
 }

@@ -4,6 +4,10 @@ from typing import Union, Any
 
 import logging
 import requests
+import aiohttp
+import time
+import math
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +26,13 @@ class Token():
         return self._data.get("access_token")
 
 class HelixInterface():
-    """TODO: INSERT CLASS DOCSTRING"""
 
-    BASE_URL = "https://api.twitch.tv/helix/"
+    _BASE_URL = "https://api.twitch.tv/helix"
+    request_rate = 0.1
 
-    def __init__(self, client_id: str, client_secret: str) -> None:
+    def __init__(self, client_id, client_secret) -> None:
         self.client_id = client_id
+        self.client_secret = client_secret
         self.token = self._get_app_access_token(client_id, client_secret)
         self.headers = {"Authorization": str(self.token), "Client-Id": client_id}
 
@@ -48,22 +53,46 @@ class HelixInterface():
 
         raise ValueError(response.json().get("message"))
 
-    def send(self, method, url, headers=None, params=None, json=None) -> dict[str, Any]:
-        """TODO: INSERT DOCSTRING"""
+    async def get_clip(self, session, clip_id):
+        async with session.get("https://api.twitch.tv/helix/clips",
+                               headers=self.headers,
+                               params={"id":clip_id,"first":100}) as response:
+            return response
 
-        response = requests.request(method, url, headers=headers,
-                                    params=params, json=json, timeout=5)
+    def _callback(self, task):
+        headers, _ = task.result()
+        remaining = int(headers.get("RateLimit-Remaining"))
+        reset = int(headers.get("RateLimit-Reset"))
+        time_to_reset = max(math.floor(reset - time.time()), 0)
 
-        return response.json()
+        if remaining == 0:
+            self.request_rate = time_to_reset
+        else:
+            self.request_rate = min(time_to_reset/remaining, 1)
 
-    def get(self, endpoint, headers=None, params=None, json=None):
-        """TODO: INSERT DOCSTRING"""
-        url = self.BASE_URL + endpoint
+    async def request(self, session: aiohttp.ClientSession, method, url, params=None, data=None, json=None):
+        async with session.request(method,
+                                   url,
+                                   params=params,
+                                   data=data,
+                                   json=json,
+                                   headers=self.headers) as response:
+            
+            if self._successful_response(response):
+                return response.headers, await response.json()
+            else:
+                self._retry()
 
-        return self.send("GET", url, headers, params, json)
+    async def get(self, session: aiohttp.ClientSession, endpoint: str, params=None, data=None, json=None):
+        url = self._BASE_URL + "/" + endpoint
+        return await self.request(session, "GET", url, params=params, data=data, json=json)
 
-    def post(self, endpoint, headers=None, params=None, json=None):
-        """TODO: INSERT DOCSTRING"""
-        url = self.BASE_URL + endpoint
+    async def post(self, session: aiohttp.ClientSession, endpoint: str, params=None, data=None, json=None):
+        url = self._BASE_URL + "/" + endpoint
+        return await self.request(session, "POST", url, params=params, data=data, json=json)
 
-        return self.send("POST", url, headers, params, json)
+    def _successful_response(self, response):
+        return response.status == 200
+    
+    def _retry(self):
+        raise NotImplementedError
