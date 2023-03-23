@@ -80,8 +80,6 @@ class HelixInterface():
             
             if self._successful_response(response):
                 return response.headers, await response.json()
-            else:
-                self._retry()
 
     async def get(self, session: aiohttp.ClientSession, endpoint: str, params=None, data=None, json=None):
         url = self._BASE_URL + "/" + endpoint
@@ -94,5 +92,5 @@ class HelixInterface():
     def _successful_response(self, response):
         return response.status == 200
     
-    def _retry(self):
-        raise NotImplementedError
+    # def _retry(self):
+    #     raise NotImplementedError
