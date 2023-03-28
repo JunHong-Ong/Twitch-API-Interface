@@ -1,10 +1,11 @@
 """TODO: INSERT MODULE DOCSTRING"""
 
-from typing import Union, Any
+from typing import Optional
 
 import logging
 import requests
 import aiohttp
+import asyncio
 import time
 import math
 
@@ -12,85 +13,63 @@ import math
 logger = logging.getLogger(__name__)
 
 class Token():
-    """TODO: INSERT CLASS DOCSTRING"""
 
-    def __init__(self, data: dict[str, Union[str, int]]) -> None:
-        self._data = data
+    def __init__(self, data: dict) -> None:
+        self.access_token: str = data.get("access_token", None)
+        self.expires_in: int = data.get("expires_in", None)
+        self.token_type: str = data.get("token_type", None)
 
-    def __repr__(self) -> str:
-        return f'Bearer {self._data.get("access_token")}'
-
-    @property
-    def id(self):
-        """Returns the access token value"""
-        return self._data.get("access_token")
 
 class HelixInterface():
 
     _BASE_URL = "https://api.twitch.tv/helix"
-    request_rate = 0.1
+    _INITIAL_REQUEST_RATE = 60/800
+
 
     def __init__(self, client_id, client_secret) -> None:
+        self.session: Optional[aiohttp.ClientSession] = None
         self.client_id = client_id
-        self.client_secret = client_secret
-        self.token = self._get_app_access_token(client_id, client_secret)
-        self.headers = {"Authorization": str(self.token), "Client-Id": client_id}
+        self.token = self._get_token(client_id, client_secret)
 
-    def _get_app_access_token(self, client_id: str, client_secret: str) -> Token:
-        """ Requests an app access token from the oauth endpoint. """
+    def _get_token(self, client_id: str, client_secret: str) -> Token:
+        """Requests an app access token from the oauth endpoint."""
 
-        params = {
-            "client_id":client_id,
-            "client_secret":client_secret,
-            "grant_type":"client_credentials"
-        }
-
+        params = {"client_id":client_id, "client_secret":client_secret,
+            "grant_type":"client_credentials"}
         response = requests.request("POST", "https://id.twitch.tv/oauth2/token", params=params,
-                                        timeout=5)
+                                    timeout=5)
 
         if response.status_code == 200:
             return Token(response.json())
-
+        
         raise ValueError(response.json().get("message"))
 
-    async def get_clip(self, session, clip_id):
-        async with session.get("https://api.twitch.tv/helix/clips",
-                               headers=self.headers,
-                               params={"id":clip_id,"first":100}) as response:
-            return response
+    @property
+    def headers(self):
+        return {"Authorization": f"Bearer {self.token.access_token}", "Client-Id": self.client_id}
 
-    def _callback(self, task):
-        headers, _ = task.result()
-        remaining = int(headers.get("RateLimit-Remaining"))
-        reset = int(headers.get("RateLimit-Reset"))
-        time_to_reset = max(math.floor(reset - time.time()), 0)
+    def _init_session(self):
+        self.session = aiohttp.ClientSession()
 
-        if remaining == 0:
-            self.request_rate = time_to_reset
-        else:
-            self.request_rate = min(time_to_reset/remaining, 1)
+    async def _close_session(self):
+        if self.session is not None:
+            await self.session.close()
+            self.session = None
 
-    async def request(self, session: aiohttp.ClientSession, method, url, params=None, data=None, json=None):
-        async with session.request(method,
-                                   url,
-                                   params=params,
-                                   data=data,
-                                   json=json,
-                                   headers=self.headers) as response:
-            
-            if self._successful_response(response):
-                return response.headers, await response.json()
+    async def get(self, url, headers, params):
+        if self.session is None:
+            self._init_session()
 
-    async def get(self, session: aiohttp.ClientSession, endpoint: str, params=None, data=None, json=None):
-        url = self._BASE_URL + "/" + endpoint
-        return await self.request(session, "GET", url, params=params, data=data, json=json)
+        if self.session is not None:
+            async with self.session.get(url, headers=headers, params=params) as response:
+                if response.status == 200:
+                    rate_limit_remain = int(response.headers.get("RateLimit-Remaining", 0))
+                    rate_limit_reset = int(response.headers.get("RateLimit-Reset", time.time()))
+                    time_to_reset = max(math.floor(rate_limit_reset - time.time()), 0)
 
-    async def post(self, session: aiohttp.ClientSession, endpoint: str, params=None, data=None, json=None):
-        url = self._BASE_URL + "/" + endpoint
-        return await self.request(session, "POST", url, params=params, data=data, json=json)
+                    if rate_limit_remain == 0:
+                        self._INITIAL_REQUEST_RATE = time_to_reset
+                    else:
+                        self._INITIAL_REQUEST_RATE = min(time_to_reset/rate_limit_remain, 1)
 
-    def _successful_response(self, response):
-        return response.status == 200
-    
-    # def _retry(self):
-    #     raise NotImplementedError
+                    return (await response.json())

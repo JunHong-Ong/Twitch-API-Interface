@@ -4,33 +4,72 @@ from typing import Union, Generator
 
 import asyncio
 import aiohttp
+import time
+from warnings import warn
 
 from .interface import HelixInterface
-from .helix_resources import Video, Channel, Clip
-
+from .models import Video, Channel, Clip
 
 
 class Helix:
+
     def __init__(self, client_id, client_secret) -> None:
         self.interface = HelixInterface(client_id, client_secret)
 
-    async def channels(self, *broadcaster_ids):
-        ENDPOINT = "channels"
+    async def videos(self, *video_ids):
+        ENDPOINT = "videos"
+
+        print(video_ids)
+        # Check that only str and int are provided
+        wrong_types = [ str(video_id) for video_id in video_ids
+                        if type(video_id) not in [str, int] ]
+        if len(wrong_types) != 0:
+            raise TypeError(f"Video IDs: {', '.join(wrong_types)} are not of type str or int.")
+
+        # Check that all strings are numeric
+        non_numeric = [ str(video_id) for video_id in video_ids
+                        if isinstance(video_id, str) and not video_id.isnumeric() ]
+        if len(non_numeric) != 0:
+            raise ValueError(f"Video IDs: {', '.join(non_numeric)} are non-numeric.")
 
         tasks = set()
-        group_size = 100
+        loop = asyncio.get_event_loop()
 
-        async with aiohttp.ClientSession() as session:
-            for index, group in enumerate(self._group(group_size, *broadcaster_ids)):
-                task = asyncio.ensure_future(self.interface.get(session, ENDPOINT, params={"broadcaster_id":group,"first":100}))
-                task.set_name(f"Group {index}: broadcaster IDs {(index-1)*group_size} - {min((index)*group_size, len(broadcaster_ids))}")
-                task.add_done_callback(self.interface._callback)
-                tasks.add(task)
-                asyncio.gather(*tasks)
+        for video_id in video_ids:
+            params = {"id": video_id}
+            task = loop.create_task(self.interface.get(
+                "https://api.twitch.tv/helix/videos", self.interface.headers, params
+            ))
 
-                await asyncio.sleep(self.interface.request_rate)
+            tasks.add(task)
+            asyncio.gather(*tasks)
+            await asyncio.sleep(self.interface._INITIAL_REQUEST_RATE)
 
-            responses = await asyncio.gather(*tasks)
+        responses = await asyncio.gather(*tasks)
+
+        return responses
+
+
+    async def users(self, *user_ids_or_logins):
+        ENDPOINT = "users"
+
+        tasks = set()
+        loop = asyncio.get_event_loop()
+
+        user_ids_or_logins = [str(i) for i in user_ids_or_logins]
+        for value in user_ids_or_logins:
+            user_ids = [i for i in user_ids_or_logins if i.isdigit()]
+            user_logins = [i for i in user_ids_or_logins if not i.isdigit()]
+            
+            params = {"id": user_ids, "login":user_logins}
+            task = loop.create_task(self.interface.get(
+                "https://api.twitch.tv/helix/users", self.interface.headers, params
+            ))
+            tasks.add(task)
+            asyncio.gather(*tasks)
+            await asyncio.sleep(self.interface._INITIAL_REQUEST_RATE)
+
+        responses = await asyncio.gather(*tasks)
 
         return responses
 
@@ -38,73 +77,18 @@ class Helix:
         ENDPOINT = "clips"
 
         tasks = set()
-        group_size = 100
+        loop = asyncio.get_event_loop()
 
-        async with aiohttp.ClientSession() as session:
-            for index, group in enumerate(self._group(group_size, *clip_ids)):
-                task = asyncio.ensure_future(self.interface.get(session, ENDPOINT, params={"id":group,"first":100}))
-                task.set_name(f"Group {index}: Clip IDs {(index-1)*group_size} - {min((index)*group_size, len(clip_ids))}")
-                task.add_done_callback(self.interface._callback)
-                tasks.add(task)
-                asyncio.gather(*tasks)
+        for clip_id in clip_ids:
+            params = {"id": clip_id}
+            task = loop.create_task(self.interface.get(
+                "https://api.twitch.tv/helix/clips", self.interface.headers, params
+            ))
 
-                await asyncio.sleep(self.interface.request_rate)
+            tasks.add(task)
+            asyncio.gather(*tasks)
+            await asyncio.sleep(self.interface._INITIAL_REQUEST_RATE)
 
-            responses = await asyncio.gather(*tasks)
-
-        responses = [Clip(data) for response in responses for data in response[1]["data"]]
-
-        for response in responses:
-            yield response
-
-    async def users(self, *user_ids):
-        ENDPOINT = "users"
-
-        tasks = set()
-        group_size = 100
-
-        async with aiohttp.ClientSession() as session:
-            for index, group in enumerate(self._group(group_size, *user_ids)):
-                task = asyncio.ensure_future(self.interface.get(session, ENDPOINT, params={"id":group,"first":100}))
-                task.set_name(f"Group {index}: Clip IDs {(index-1)*group_size} - {min((index)*group_size, len(user_ids))}")
-                task.add_done_callback(self.interface._callback)
-                tasks.add(task)
-                asyncio.gather(*tasks)
-
-                await asyncio.sleep(self.interface.request_rate)
-
-            responses = await asyncio.gather(*tasks)
+        responses = await asyncio.gather(*tasks)
 
         return responses
-
-    async def videos(self, *video_ids):
-        ENDPOINT = "videos"
-
-        tasks = set()
-        group_size = 100
-
-        async with aiohttp.ClientSession() as session:
-            for index, group in enumerate(self._group(group_size, *video_ids)):
-                task = asyncio.ensure_future(self.interface.get(session, ENDPOINT, params={"id":group,"first":100}))
-                task.set_name(f"Group {index}: Clip IDs {(index-1)*group_size} - {min((index)*group_size, len(video_ids))}")
-                task.add_done_callback(self.interface._callback)
-                tasks.add(task)
-                asyncio.gather(*tasks)
-
-                await asyncio.sleep(self.interface.request_rate)
-
-            responses = await asyncio.gather(*tasks)
-
-        return responses
-
-
-    def _group(self, group_size, *inputs):
-        num_inputs = len(inputs)
-        groups = [
-            inputs[i:i+group_size]
-            for i in range(0, num_inputs, group_size)
-        ]
-        num_groups = len(groups)
-
-        print(f"{num_inputs} inputs has been divided into {num_groups} groups of size {group_size}.")
-        return groups
