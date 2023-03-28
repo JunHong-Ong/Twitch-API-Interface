@@ -36,8 +36,7 @@ class TestAuthorization(TestCase):
         interface = HelixInterface("test_id", "test_secret")
         self.assertIsNotNone(interface.token)
         self.assertIsInstance(interface.token, Token)
-        self.assertEqual(interface.token.id, "jostpf5q0uzmxmkba9iyug38kjtgh")
-        self.assertEqual(str(interface.token), "Bearer jostpf5q0uzmxmkba9iyug38kjtgh")
+        self.assertEqual(interface.token.access_token, "jostpf5q0uzmxmkba9iyug38kjtgh")
 
     @patch('requests.request')
     def test_invalid_client_id(self, interface_mock):

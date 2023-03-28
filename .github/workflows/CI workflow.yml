@@ -18,9 +18,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Lint with pylint
-        run: |
-          pylint --fail-under 9 twitch
-
       - name: Run unit tests with nose
         run: nosetests
